@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro Management - Schedule System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #8e44ad;
+            --bg-color: #f4f7f6;
+            --white: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-top: 8px solid var(--accent-color);
+            box-sizing: border-box;
+        }
+
+        h2 { 
+            color: var(--primary-color); 
+            text-align: center; 
+            margin-bottom: 25px; 
+            text-transform: uppercase; 
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #444; 
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: all 0.3s ease; 
+            background-color: var(--accent-color); 
+            color: white; 
+            margin-top: 10px;
+        }
+
+        button:hover { 
+            filter: brightness(1.1); 
+            transform: translateY(-2px); 
+        }
+
+        #displayArea { margin-top: 25px; display: none; }
+
+        .warning-msg { 
+            color: #e74c3c; 
+            background: #fdf2f2; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #f5c6cb; 
+            text-align: center;
+        }
+
+        .success-msg { 
+            color: #27ae60; 
+            background: #f1f9f5; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #d4edda; 
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Schedule Management</h2>
+        
+        <form id="scheduleForm">
+            <div class="form-group">
+                <label>Route Name</label>
+                <input type="text" id="routeName" placeholder="e.g. Line 1 - Station A to B" required>
+            </div>
+
+            <div class="form-group">
+                <label>Departure Time</label>
+                <input type="datetime-local" id="departure" required>
+            </div>
+
+            <div class="form-group">
+                <label>Arrival Time</label>
+                <input type="datetime-local" id="arrival" required>
+            </div>
+
+            <div class="form-group">
+                <label>Select Train</label>
+                <select id="trainSelect" required>
+                    <option value="">-- Fetching Trains... --</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn">Save & Bind Schedule</button>
+        </form>
+
+        <div id="displayArea"></div>
+    </div>
+
+<script>
+    // Supabase Credentials
+    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // جلب القطارات لربطها بالـ train_id
+    async function loadTrains() {
+        const select = document.getElementById('trainSelect');
+        const { data, error } = await _supabase.from('trains').select('id, name');
+        
+        if (error) {
+            console.error("Error fetching trains:", error);
+            select.innerHTML = '<option value="">Error loading trains</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Choose a Train --</option>';
+        data.forEach(train => {
+            let opt = document.createElement('option');
+            opt.value = train.id; // هذا هو الـ id الخاص بالقطار
+            opt.innerText = train.name;
+            select.appendChild(opt);
+        });
+    }
+
+    // إرسال البيانات للجدول
+    document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const area = document.getElementById('displayArea');
+        
+        const r_name = document.getElementById('routeName').value;
+        const dep_raw = document.getElementById('departure').value;
+        const arr_raw = document.getElementById('arrival').value;
+        const t_id = document.getElementById('trainSelect').value;
+
+        // فحص التواريخ
+        if (new Date(arr_raw) <= new Date(dep_raw)) {
+            area.style.display = 'block';
+            area.innerHTML = `<div class="warning-msg">⚠️ Arrival must be after Departure!</div>`;
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        // الإضافة لجدول schedules
+        const { error } = await _supabase.from('schedules').insert([
+            {
+                route_name: r_name,
+                departure_time: new Date(dep_raw).toISOString(),
+                arrival_time: new Date(arr_raw).toISOString(),
+                train_id: t_id
+            }
+        ]);
+
+        area.style.display = 'block';
+        if (!error) {
+            area.innerHTML = `<div class="success-msg">✅ Schedule saved! ID will be auto-generated by the system.</div>`;
+            document.getElementById('scheduleForm').reset();
+        } else {
+            area.innerHTML = `<div class="warning-msg">❌ Error: ${error.message}</div>`;
+        }
+
+        btn.disabled = false;
+        btn.innerText = "Save & Bind Schedule";
+    });
+
+    loadTrains();
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Modify Booking & Capacity</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #8e44ad;
+            --bg-color: #f4f7f6;
+            --white: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-top: 8px solid var(--accent-color);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-accent {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        /* قسم التعديل مخفي في البداية */
+        #editSection {
+            display: none;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #eee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Modify Booking</h2>
+    
+    <div id="searchSection">
+        <div class="form-group">
+            <label>Passenger Name</label>
+            <input type="text" id="searchName" placeholder="Name as booked">
+        </div>
+        <div class="form-group">
+            <label>Passenger ID</label>
+            <input type="text" id="searchID" placeholder="National ID">
+        </div>
+        <button class="btn-primary" onclick="verifyAndSearch()">Find My Record</button>
+    </div>
+
+    <div id="editSection">
+        <div class="form-group">
+            <label>Update Name</label>
+            <input type="text" id="editName">
+        </div>
+
+        <div class="form-group">
+            <label>Update Date</label>
+            <input type="date" id="editDate">
+        </div>
+
+        <div class="form-group">
+            <label>Change Train</label>
+            <select id="editTrain">
+                </select>
+        </div>
+
+        <button class="btn-accent" id="saveBtn" onclick="applyFullUpdate()">Save All Changes</button>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let oldBooking = null;
+
+    async function loadTrains() {
+        const { data } = await _supabase.from('trains').select('id, name');
+        const select = document.getElementById('editTrain');
+        data?.forEach(t => {
+            let opt = document.createElement('option');
+            opt.value = t.id;
+            opt.innerText = t.name;
+            select.appendChild(opt);
+        });
+    }
+
+    async function verifyAndSearch() {
+        const name = document.getElementById('searchName').value;
+        const p_id = document.getElementById('searchID').value;
+
+        if(!name || !p_id) { alert("Please fill all search fields"); return; }
+
+        const { data: pVerify } = await _supabase.from('passengers').select('*').eq('passenger_id', p_id).maybeSingle();
+        if (!pVerify) { alert("Passenger ID not found!"); return; }
+
+        const { data: bData } = await _supabase.from('Booking').select('*').eq('name', name).maybeSingle();
+        
+        if (bData) {
+            oldBooking = bData;
+            document.getElementById('editSection').style.display = 'block';
+            document.getElementById('editName').value = bData.name;
+            document.getElementById('editDate').value = bData.booking_date;
+            if (bData.train_id) document.getElementById('editTrain').value = bData.train_id;
+            
+            alert("Record verified. You can modify now.");
+        } else {
+            alert("No booking found for this name.");
+        }
+    }
+
+    async function applyFullUpdate() {
+        const newName = document.getElementById('editName').value;
+        const newDate = document.getElementById('editDate').value;
+        const newTrainId = document.getElementById('editTrain').value;
+        const oldTrainId = oldBooking.train_id;
+
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Updating...";
+
+        if (oldTrainId && oldTrainId != newTrainId) {
+            const { data: oldT } = await _supabase.from('trains').select('capacity').eq('id', oldTrainId).single();
+            await _supabase.from('trains').update({ capacity: oldT.capacity + 1 }).eq('id', oldTrainId);
+
+            const { data: newT } = await _supabase.from('trains').select('capacity').eq('id', newTrainId).single();
+            if (newT.capacity <= 0) {
+                alert("New selected train is full!");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Save All Changes";
+                return;
+            }
+            await _supabase.from('trains').update({ capacity: newT.capacity - 1 }).eq('id', newTrainId);
+        }
+
+        const { error } = await _supabase.from('Booking')
+            .update({ 
+                name: newName, 
+                booking_date: newDate,
+                train_id: newTrainId 
+            })
+            .eq('id_booking', oldBooking.id_booking);
+
+        if (!error) {
+            alert("Update successful!");
+            location.reload();
+        } else {
+            alert("Error: " + error.message);
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Save All Changes";
+        }
+    }
+
+    loadTrains();
+</script>
+
+</body>
+</html>
