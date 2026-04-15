@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro System - Passenger History</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #8e44ad;
+            --bg-color: #f4f7f6;
+            --white: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-top: 8px solid var(--accent-color);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        h2 { 
+            color: var(--primary-color); 
+            margin-bottom: 25px; 
+            text-transform: uppercase; 
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #444; 
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus { border-color: var(--accent-color); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: all 0.3s ease; 
+            background-color: var(--accent-color); 
+            color: white; 
+            margin-top: 10px;
+        }
+
+        button:hover { 
+            filter: brightness(1.1); 
+            transform: translateY(-2px); 
+        }
+
+        /* تنسيق جدول السجل */
+        .history-container {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .history-table th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            padding: 12px;
+            border-bottom: 2px solid #eee;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .history-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .msg-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-msg { background: #fdf2f2; color: #e74c3c; border: 1px solid #f5c6cb; }
+        .info-msg { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>View Passenger History</h2>
+        
+        <div class="form-group">
+            <label>Passenger ID</label>
+            <input type="text" id="pIDInput" placeholder="e.g. P1001" required>
+        </div>
+
+        <button onclick="fetchHistory()" id="searchBtn">Show Travel History</button>
+
+        <div id="msgArea" class="msg-box"></div>
+
+        <div class="history-container">
+            <table class="history-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Route</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    // Supabase Config
+    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function fetchHistory() {
+        const pID = document.getElementById('pIDInput').value.trim();
+        const table = document.getElementById('historyTable');
+        const tbody = document.getElementById('tableBody');
+        const msgArea = document.getElementById('msgArea');
+        const btn = document.getElementById('searchBtn');
+
+        if (!pID) {
+            alert("Please enter a Passenger ID");
+            return;
+        }
+
+        // تهيئة الواجهة للبحث
+        btn.disabled = true;
+        btn.innerText = "Fetching Data...";
+        table.style.display = "none";
+        msgArea.style.display = "none";
+        tbody.innerHTML = "";
+
+        try {
+            /* المنطق الاحترافي:
+               نجلب الحجوزات من جدول Booking ونقوم بعمل Join تلقائي مع جدول schedules 
+               لجلب اسم المسار ووقت المغادرة في طلب واحد فقط.
+            */
+            const { data, error } = await _supabase
+                .from('Booking')
+                .select(`
+                    id_booking,
+                    schedules (
+                        route_name,
+                        departure_time
+                    )
+                `)
+                .eq('passenger_id', pID);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    const route = item.schedules ? item.schedules.route_name : "Unknown Route";
+                    const date = item.schedules ? new Date(item.schedules.departure_time).toLocaleDateString() : "N/A";
+                    
+                    const row = `<tr>
+                        <td>#${item.id_booking}</td>
+                        <td>${route}</td>
+                        <td>${date}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+                table.style.display = "table";
+            } else {
+                msgArea.className = "msg-box info-msg";
+                msgArea.style.display = "block";
+                msgArea.innerHTML = `ℹ️ No travel history found for ID: <b>${pID}</b>`;
+            }
+
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            msgArea.className = "msg-box error-msg";
+            msgArea.style.display = "block";
+            msgArea.innerHTML = "❌ Connection error. Check database permissions.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Show Travel History";
+        }
+    }
+</script>
+</body>
+</html>

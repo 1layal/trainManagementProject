@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Train Booking System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro System - Secure Booking</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -15,7 +16,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             margin: 0;
             display: flex;
@@ -28,184 +29,182 @@
         .card {
             background: var(--white);
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
             padding: 40px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             border-top: 8px solid var(--accent-color);
             box-sizing: border-box;
-        }
-
-        h2 {
-            color: var(--primary-color);
             text-align: center;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
+        h2 { color: var(--primary-color); margin-bottom: 25px; text-transform: uppercase; font-size: 1.4rem; }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #444;
-        }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
 
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease;
-            outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--accent-color);
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .btn-accent {
-            background-color: var(--accent-color);
-            color: white;
-        }
-
-        button:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
-
-        .status-info {
-            background: #f0ebf7;
-            padding: 12px;
-            border-radius: 8px;
-            color: var(--accent-color);
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
             font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            transition: 0.3s;
         }
+
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            background-color: var(--accent-color); 
+            color: white; 
+            margin-top: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .status { margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-size: 14px; line-height: 1.5; }
+        .success { background: #e6fffa; color: #234e52; border: 1px solid #b2f5ea; }
+        .error { background: #fff5f5; color: #742a2a; border: 1px solid #feb2b2; }
     </style>
 </head>
 <body>
 
-<div class="card"> <h2>Book Train Ticket</h2>
-    
-    <div id="statusInfo" class="status-info">Select a train to check capacity</div>
-
-    <form id="bookingForm">
-        <div class="form-group">
-            <label>Passenger Name</label>
-            <input type="text" id="passName" required placeholder="Enter Full Name">
-        </div>
-        <div class="form-group">
-            <label>Passenger ID</label>
-            <input type="text" id="passID" required placeholder="Enter National ID">
-        </div>
-        <div class="form-group">
-            <label>Select Train</label>
-            <select id="trainSelect" onchange="checkCapacity()" required>
-                <option value="">-- Choose Train --</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Booking Date</label>
-            <input type="date" id="bookingDate" required>
-        </div>
+    <div class="card">
+        <h2>Book Ticket</h2>
+        <p style="color: #666; font-size: 13px; margin-bottom: 20px;"></p>
         
-        <button type="submit" id="submitBtn" class="btn-accent">Confirm Booking</button>
-    </form>
-</div>
+        <form id="bookingForm">
+            <div class="form-group">
+                <label>Passenger ID</label>
+                <input type="text" id="pID" placeholder="Enter ID (e.g. P1001)" required>
+            </div>
+
+            <div class="form-group">
+                <label>Select Available Trip</label>
+                <select id="tripSelect" required>
+                    <option value="">Fetching trips from system...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Ticket Class & Price</label>
+                <select id="ticketType" required>
+                    <option value="">-- Select Class --</option>
+                    <option value="Economy" data-price="50">Economy Class - 50 SAR</option>
+                    <option value="Business" data-price="120">Business Class - 120 SAR</option>
+                    <option value="First Class" data-price="250">First Class - 250 SAR</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn">Confirm Booking</button>
+        </form>
+
+        <div id="statusArea" class="status"></div>
+    </div>
 
 <script>
     const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function fetchTrains() {
-        const { data, error } = await _supabase.from('trains').select('id, name');
-        if (error) console.error(error);
-        const select = document.getElementById('trainSelect');
-        data?.forEach(t => {
-            let opt = document.createElement('option');
+    async function fetchTrips() {
+        const select = document.getElementById('tripSelect');
+        const { data, error } = await _supabase
+            .from('schedules')
+            .select('id, route_name, departure_time');
+
+        if (error) {
+            select.innerHTML = '<option>Error loading trips</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Choose a Trip --</option>';
+        data.forEach(t => {
+            const time = new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const opt = document.createElement('option');
             opt.value = t.id;
-            opt.innerText = t.name;
+            opt.textContent = `${t.route_name} | ${time}`;
             select.appendChild(opt);
         });
-    }
-
-    async function checkCapacity() {
-        const trainId = document.getElementById('trainSelect').value;
-        if (!trainId) return;
-        const { data } = await _supabase.from('trains').select('capacity').eq('id', trainId).single();
-        if (data) {
-            document.getElementById('statusInfo').innerText = `Available Capacity: ${data.capacity}`;
-            return data.capacity;
-        }
     }
 
     document.getElementById('bookingForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        const p_id = document.getElementById('passID').value;
-        const p_name = document.getElementById('passName').value;
-        const t_id = document.getElementById('trainSelect').value;
-        const b_date = document.getElementById('bookingDate').value;
-
+        const status = document.getElementById('statusArea');
+        
         btn.disabled = true;
-        btn.innerText = "Processing...";
+        btn.innerText = "Verifying & Booking...";
+        status.style.display = "none";
 
-        const { data: pCheck } = await _supabase.from('passengers').select('name').eq('passenger_id', p_id).maybeSingle();
-        if (!pCheck) {
-            alert("Passenger not registered!");
-            btn.disabled = false;
-            btn.innerText = "Confirm Booking";
-            return;
-        }
+        const pID = document.getElementById('pID').value.trim();
+        const sID = document.getElementById('tripSelect').value;
+        
+        // جلب نوع التذكرة والسعر من القائمة المنسدلة
+        const typeSelect = document.getElementById('ticketType');
+        const tType = typeSelect.value;
+        const tPrice = typeSelect.selectedOptions[0].getAttribute('data-price');
 
-        const currentCap = await checkCapacity();
-        if (currentCap <= 0) {
-            alert("Train is full!");
-            btn.disabled = false;
-            btn.innerText = "Confirm Booking";
-            return;
-        }
+        try {
+            const { data: pData, error: pError } = await _supabase
+                .from('passengers')
+                .select('name')
+                .eq('passenger_id', pID)
+                .single();
 
-        const { error: bookError } = await _supabase.from('Booking').insert([
-            { name: p_name, booking_date: b_date }
-        ]);
+            if (pError || !pData) throw new Error("Passenger ID not found.");
 
-        if (!bookError) {
-            await _supabase.from('trains').update({ capacity: currentCap - 1 }).eq('id', t_id);
-            alert("Booking Successful!");
+            const { data: sData, error: sError } = await _supabase
+                .from('schedules')
+                .select('train_id')
+                .eq('id', sID)
+                .single();
+
+            if (sError || !sData) throw new Error("Trip information missing.");
+
+            // تنفيذ الحجز مع إضافة النوع والسعر
+            const { error: bError } = await _supabase
+                .from('Booking')
+                .insert([{
+                    passenger_id: pID,
+                    name: pData.name,
+                    schedule_id: sID,
+                    train_id: sData.train_id,
+                    ticket_type: tType,   // العمود الجديد 1
+                    ticket_price: tPrice, // العمود الجديد 2
+                    booking_date: new Date().toISOString().split('T')[0]
+                }]);
+
+            if (bError) throw bError;
+
+            status.className = "status success";
+            status.innerHTML = `✅ <b>Success!</b><br>Class: ${tType} (${tPrice} SAR)<br>Passenger: ${pData.name}`;
+            status.style.display = "block";
             document.getElementById('bookingForm').reset();
-            document.getElementById('statusInfo').innerText = "Select a train to check capacity";
-        } else {
-            alert("Error: " + bookError.message);
+
+        } catch (err) {
+            status.className = "status error";
+            status.innerHTML = "❌ <b>Failed:</b> " + err.message;
+            status.style.display = "block";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Confirm Booking";
         }
-        btn.disabled = false;
-        btn.innerText = "Confirm Booking";
     });
 
-    fetchTrains();
+    fetchTrips();
 </script>
 </body>
 </html>

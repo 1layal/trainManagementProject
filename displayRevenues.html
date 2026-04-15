@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px; /* صغرنا عرض الحاوية */
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 { 
+            color: var(--primary); 
+            font-size: 1.2rem; /* تصغير العنوان */
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+
+        /* كرت الإجمالي بعد التصغير */
+        .summary-card {
+            background: #f8f9fa; /* لون أهدأ بدلاً من الأخضر الصارخ */
+            color: var(--primary);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #eee;
+            margin-bottom: 25px;
+        }
+
+        .summary-card h2 { 
+            margin: 0; 
+            font-size: 12px; 
+            color: #7f8c8d; 
+            text-transform: uppercase; 
+        }
+
+        .total-amount { 
+            font-size: 1.5rem; /* حجم معقول جداً بدلاً من 3rem */
+            font-weight: bold; 
+            color: var(--accent);
+            margin: 5px 0; 
+        }
+
+        .ticket-count { font-size: 12px; color: #95a5a6; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            background: #fff; 
+            padding: 10px; 
+            text-align: left; 
+            color: #999; 
+            border-bottom: 2px solid #f4f7f6;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        td { padding: 12px 10px; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
+
+        .trip-name { font-weight: 600; color: var(--primary); }
+        .revenue-val { font-weight: bold; color: var(--accent); }
+        
+        .badge {
+            background: #f0fdf4;
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Financial Report</h1>
+
+    <div class="summary-card">
+        <h2>Total Revenue</h2>
+        <div id="grandTotal" class="total-amount">0 SAR</div>
+        <div id="totalTickets" class="ticket-count">Tickets: 0</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Route</th>
+                <th>Pax</th>
+                <th>Revenue</th>
+            </tr>
+        </thead>
+        <tbody id="revenueBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const S_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    async function loadReport() {
+        try {
+            const { data: schedules, error } = await _supabase
+                .from('schedules')
+                .select('route_name, Booking(ticket_price)');
+
+            if (error) throw error;
+
+            const tbody = document.getElementById('revenueBody');
+            let grandTotal = 0;
+            let totalTickets = 0;
+
+            schedules.forEach(trip => {
+                const bookings = trip.Booking || [];
+                const count = bookings.length;
+                const revenue = bookings.reduce((s, b) => s + (Number(b.ticket_price) || 0), 0);
+                
+                totalTickets += count;
+                grandTotal += revenue;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="trip-name">${trip.route_name}</td>
+                        <td><span class="badge">${count}</span></td>
+                        <td class="revenue-val">${revenue} SAR</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString() + " SAR";
+            document.getElementById('totalTickets').innerText = "Total Tickets: " + totalTickets;
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    loadReport();
+</script>
+</body>
+</html>

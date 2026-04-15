@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metro Passenger Management - Team Project</title>
-    
+    <title>Metro System - Add Passenger</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -28,202 +26,135 @@
             padding: 20px;
         }
 
-        /* البطاقة الأساسية */
         .card {
             background: var(--white);
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
             padding: 40px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             border-top: 8px solid var(--accent-color);
             box-sizing: border-box;
-        }
-
-        h2 {
-            color: var(--primary-color);
             text-align: center;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 1.5rem;
         }
 
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
+        h2 { color: var(--primary-color); margin-bottom: 25px; text-transform: uppercase; font-size: 1.4rem; }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #444;
-        }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; font-size: 14px; }
 
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease;
-            outline: none;
-        }
-
-        input:focus {
-            border-color: var(--accent-color);
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .btn-accent {
-            background-color: var(--accent-color);
-            color: white;
-        }
-
-        button:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
-
-        #displayArea {
-            margin-top: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        h3 { color: var(--primary-color); font-size: 1.1rem; }
-
-        #passengerList {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-        }
-
-        #passengerList li {
-            background: #f9f9f9;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 8px;
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
             font-size: 14px;
-            border-left: 4px solid var(--accent-color);
+            outline: none;
+            box-sizing: border-box;
+            transition: 0.3s;
         }
+
+        input:focus { border-color: var(--accent-color); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            background-color: var(--accent-color); 
+            color: white; 
+            margin-top: 15px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:disabled { background-color: #ccc; }
+
+        .status-msg { margin-top: 15px; font-size: 14px; display: none; padding: 10px; border-radius: 6px; }
+        .success { background: #e6fffa; color: #2c7a7b; border: 1px solid #b2f5ea; }
+        .error { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h2>Add Passenger</h2>
+        <p style="color: #666; font-size: 13px; margin-bottom: 20px;">Enter details to add a new passenger to the system</p>
         
-        <form id="passengerForm">
+        <form id="regForm">
             <div class="form-group">
-                <label>Passenger Full Name</label>
-                <input type="text" id="fullName" required placeholder="John Doe">
+                <label>Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter name" required>
             </div>
 
             <div class="form-group">
                 <label>Passenger ID</label>
-                <input type="text" id="passengerID" required placeholder="PID-XXXX">
+                <input type="text" id="pID" placeholder="Ex: P-1002" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="name@email.com" required>
             </div>
 
             <div class="form-group">
                 <label>Phone Number</label>
-                <input type="tel" id="phone" required placeholder="+966 5x xxx xxxx">
+                <input type="tel" id="phone" placeholder="05xxxxxxxx" required>
             </div>
 
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" required placeholder="name@email.com">
-            </div>
-
-            <div class="form-group">
-                <label>Trip / Train ID</label>
-                <input type="text" id="tripID" required placeholder="TR-102">
-            </div>
-
-            <button type="submit" id="saveBtn" class="btn-accent">Save to Database</button>
+            <button type="submit" id="submitBtn">Register Passenger</button>
         </form>
 
-        <div id="displayArea">
-            <h3>Registered Passengers:</h3>
-            <ul id="passengerList"></ul>
-        </div>
+        <div id="statusArea" class="status-msg"></div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+<script>
+    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.getElementById('regForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('statusArea');
         
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        btn.disabled = true;
+        btn.innerText = "Registering...";
+        status.style.display = "none";
 
-        const form = document.getElementById('passengerForm');
-        const saveBtn = document.getElementById('saveBtn');
+        const passengerData = {
+            passenger_id: document.getElementById('pID').value,
+            name: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value
+        };
 
-        async function fetchPassengers() {
-            const { data, error } = await _supabase
+        try {
+            // إضافة البيانات لجدول passengers فقط
+            const { error } = await _supabase
                 .from('passengers')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (error) {
-                console.error("Fetch Error:", error.message);
-                return;
-            }
-            
-            if (data) {
-                const list = document.getElementById('passengerList');
-                list.innerHTML = '';
-                data.forEach(p => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <strong>Name:</strong> ${p.name} | 
-                        <strong>ID:</strong> ${p.passenger_id} <br>
-                        <strong>Phone:</strong> ${p.phone} | 
-                        <strong>Trip:</strong> ${p.trip_id}
-                    `;
-                    list.appendChild(li);
-                });
-            }
+                .insert([passengerData]);
+
+            if (error) throw error;
+
+            status.className = "status-msg success";
+            status.innerHTML = "✅ Passenger registered successfully!";
+            status.style.display = "block";
+            document.getElementById('regForm').reset();
+
+        } catch (err) {
+            status.className = "status-msg error";
+            status.innerHTML = "❌ Error: " + err.message;
+            status.style.display = "block";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Register Passenger";
         }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            saveBtn.disabled = true;
-            saveBtn.innerText = "Saving...";
-
-            const newPassenger = {
-                name: document.getElementById('fullName').value,
-                passenger_id: document.getElementById('passengerID').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                trip_id: document.getElementById('tripID').value
-            };
-
-            const { error } = await _supabase.from('passengers').insert([newPassenger]);
-
-            if (error) {
-                alert("Database Error: " + error.message);
-            } else {
-                form.reset();
-                fetchPassengers();
-            }
-            saveBtn.disabled = false;
-            saveBtn.innerText = "Save to Database";
-        });
-
-        fetchPassengers();
-    </script>
+    });
+</script>
 </body>
 </html>
