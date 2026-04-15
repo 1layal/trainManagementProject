@@ -123,21 +123,37 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+       document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            messageDiv.innerHTML = `<span class="error">${error.message}</span>`;
+            return;
+        }
 
-           if (error) {
-            document.getElementById('message').innerHTML = '<span style="color:red;">Error: ' + error.message + '</span>';
-        } else {
-            const userRole = data.user.user_metadata ? data.user.user_metadata.role : 'staff';
-            document.getElementById('message').innerHTML = '<span style="color:green;">Logged in as ' + data.user.email + '. Role: ' + userRole + '</span>'; // Redirect to main page or store session
-                window.location.href = 'add_train.html';
-            }
-        });
-    </script>
+        // After successful auth, fetch role from users table
+        const { data: userData, error: roleError } = await supabaseClient
+            .from('users')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        if (roleError) {
+            console.error('Role fetch error:', roleError);
+            messageDiv.innerHTML = '<span class="error">Could not determine user role. Please contact admin.</span>';
+            await supabaseClient.auth.signOut();
+            return;
+        }
+
+        const role = userData.role;
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userEmail', email);
+        window.location.href = 'dashboard.html';
+    });
+</script>
 </body>
 </html>

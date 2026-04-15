@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Manage Trains</title>
-  <style>
-        * { box-sizing: border-box; }
-        :root { --primary: #2c3e50; --accent: #8e44ad; --bg: #f4f7f6; }
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --accent: #8e44ad;
+            --bg: #f4f7f6;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: var(--bg);
             margin: 0;
             padding: 20px;
         }
+
         .card {
             background: white;
             width: 100%;
@@ -18,28 +28,34 @@
             margin: 0 auto;
             padding: 30px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-top: 8px solid var(--accent);
         }
+
         h2 {
             color: var(--primary);
             text-align: center;
             margin-bottom: 20px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
         }
+
         th {
             background-color: var(--primary);
             color: white;
         }
+
         button {
             border: none;
             border-radius: 6px;
@@ -48,14 +64,17 @@
             font-weight: bold;
             margin-right: 5px;
         }
+
         button.edit {
             background-color: #28a745;
             color: white;
         }
+
         button.delete {
             background-color: #dc3545;
             color: white;
         }
+
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -66,36 +85,55 @@
             font-weight: bold;
             margin-bottom: 20px;
         }
+
         .message {
             margin-top: 15px;
             padding: 10px;
             border-radius: 8px;
             text-align: center;
         }
-        .error { background: #f8d7da; color: #721c24; }
-        .success { background: #d4edda; color: #155724; }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
     </style>
-     <script  src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
-<div class="card">
-    <h2>Manage Trains</h2>
-    <button id="addTrainBtn" class="btn-primary">+ Add New Train</button>
-    <div style="overflow-x: auto;">
-        <table id="trainsTable">
-            <thead>
-                <tr><th>ID</th><th>Name</th><th>Number</th><th>Capacity</th><th>Available Seats</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="trainsTableBody">
-                <tr><td colspan="6" style="text-align:center;">Loading trains...</td></tr>
-            </tbody>
-        </table>
+    <div class="card">
+        <h2>Manage Trains</h2>
+        <button id="addTrainBtn" class="btn-primary">+ Add New Train</button>
+        <div style="overflow-x: auto;">
+            <table id="trainsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Number</th>
+                        <th>Capacity</th>
+                        <th>Available Seats</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="trainsTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align:center;">Loading trains...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="message" class="message"></div>
     </div>
-    <div id="message" class="message"></div>
-</div>
 
     <script>
-         const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+        const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -113,24 +151,24 @@
             tbody.innerHTML = '';
             data.forEach(train => {
                 const row = tbody.insertRow();
-            row.insertCell(0).textContent = train.id;
-            row.insertCell(1).textContent = train.name;
-            row.insertCell(2).textContent = train.number;
-            row.insertCell(3).textContent = train.capacity;
-            row.insertCell(4).textContent = train.available_seats ?? train.capacity;
-            const actionsCell = row.insertCell(5);
-            // Create Edit button
-            const editBtn = document.createElement('button');
-            editBtn.textContent = 'Edit';
-            editBtn.className = 'edit';
-            editBtn.onclick = () => editTrain(train.id);
-            // Create Delete button
-            const delBtn = document.createElement('button');
-            delBtn.textContent = 'Delete';
-            delBtn.className = 'delete';
-            delBtn.onclick = () => deleteTrain(train.id);
-            actionsCell.appendChild(editBtn);
-            actionsCell.appendChild(delBtn);
+                row.insertCell(0).textContent = train.id;
+                row.insertCell(1).textContent = train.name;
+                row.insertCell(2).textContent = train.number;
+                row.insertCell(3).textContent = train.capacity;
+                row.insertCell(4).textContent = train.available_seats ?? train.capacity;
+                const actionsCell = row.insertCell(5);
+                // Create Edit button
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'edit';
+                editBtn.onclick = () => editTrain(train.id);
+                // Create Delete button
+                const delBtn = document.createElement('button');
+                delBtn.textContent = 'Delete';
+                delBtn.className = 'delete';
+                delBtn.onclick = () => deleteTrain(train.id);
+                actionsCell.appendChild(editBtn);
+                actionsCell.appendChild(delBtn);
             });
         }
 
@@ -141,12 +179,13 @@
             else loadTrains(); // refresh list
         }
 
-        function editTrain(train) {
+        function editTrain(id) {
             // For now, redirect to edit page with query param
-            window.location.href =` edit_train.html?id=${train.id}`;
+            window.location.href = `edit_train.html?id=${id}`;
         }
 
         loadTrains();
     </script>
 </body>
+
 </html>
