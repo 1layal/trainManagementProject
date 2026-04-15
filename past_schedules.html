@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Schedules - Centralized View</title>
+    
+    <style>
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            display: flex;
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh;
+            padding-top: 50px; 
+        }
+
+       
+        .main-container {
+            background: white;
+            width: 90%;
+            max-width: 1000px; 
+            padding: 40px;
+            
+            
+            border-top: 10px solid #6424a9; 
+            
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 2.5rem; 
+            margin-bottom: 30px;
+        }
+
+       
+        .search-box {
+            display: flex;
+            flex-direction: column; 
+            gap: 20px;
+            max-width: 500px; 
+            margin: 0 auto 40px auto; 
+            background: #fdfdfd;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        input {
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid #cbd5e0;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4a90e2;
+        }
+
+        
+        .btn-search {
+            background-color: #0c2f56;
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-search:hover {
+            background-color: #357abd;
+        }
+
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            font-size: 1.1rem;
+            display: none; 
+        }
+
+        th, td {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #2d3748;
+        }
+
+        .status-tag {
+            background: #edf2f7;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h2>Train Schedules</h2>
+
+        <div class="search-box">
+            <div class="input-group">
+                <label>Train ID:</label>
+                <input type="number" id="trainIdInput" placeholder="Enter Train ID (e.g. 5)">
+            </div>
+            
+            <div class="input-group">
+                <label>Date (Optional):</label>
+                <input type="date" id="dateFilter">
+            </div>
+
+            <button class="btn-search" onclick="loadSchedules()">Show Past Schedules</button>
+        </div>
+
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Train ID</th>
+                    <th>Route</th>
+                    <th>Departure</th>
+                    <th>Arrival</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const supabaseUrl = 'https://llodsshgdscjtlwdajgs.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function loadSchedules() {
+            const trainId = document.getElementById('trainIdInput').value;
+            const selectedDate = document.getElementById('dateFilter').value;
+            const now = new Date().toISOString();
+
+            try {
+                
+                let query = _supabase
+                    .from('schedules')
+                    .select('*')
+                    .lt('departure_time', now)
+                    .order('departure_time', { ascending: false });
+
+                if (trainId) query = query.eq('train_id', trainId);
+                
+                if (selectedDate) {
+                    query = query.gte('departure_time', selectedDate + 'T00:00:00')
+                                 .lte('departure_time', selectedDate + 'T23:59:59');
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                displayData(data);
+            } catch (err) {
+                alert("Error fetching data: " + err.message);
+            }
+        }
+
+        function displayData(data) {
+            const table = document.getElementById('resultsTable');
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                alert("No past schedules found.");
+                table.style.display = "none";
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${item.train_id}</td>
+                    <td>${item.route_name}</td>
+                    <td>${new Date(item.departure_time).toLocaleString()}</td>
+                    <td>${new Date(item.arrival_time).toLocaleString()}</td>
+                    <td><span class="status-tag">Completed</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            table.style.display = "table";
+        }
+    </script>
+</body>
+</html>
