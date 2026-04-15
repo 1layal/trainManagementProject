@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Passenger</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #8e44ad;
+            --bg-color: #f4f7f6;
+            --white: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-top: 8px solid var(--accent-color);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        h2 { color: var(--primary-color); margin-bottom: 25px; text-transform: uppercase; font-size: 1.2rem; }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; }
+
+        input { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus { border-color: var(--accent-color); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: all 0.3s ease; 
+            background-color: var(--accent-color); 
+            color: white; 
+            margin-top: 10px;
+        }
+
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        #resultArea {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            text-align: left;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .success-box { background: #f1f9f5; border: 1px solid #d4edda; color: #27ae60; }
+        .error-box { background: #fdf2f2; border: 1px solid #f5c6cb; color: #e74c3c; text-align: center; }
+
+        .info-row {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-label { font-weight: bold; color: var(--accent-color); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Search for Passenger</h2>
+        <div class="form-group">
+            <label>Passenger ID</label>
+            <input type="text" id="pIDInput" placeholder="Enter passenger_id..." required>
+        </div>
+        <button onclick="searchPassenger()" id="searchBtn">Search Now</button>
+        <div id="resultArea"></div>
+    </div>
+
+<script>
+    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function searchPassenger() {
+        const idValue = document.getElementById('pIDInput').value.trim();
+        const resultArea = document.getElementById('resultArea');
+        const btn = document.getElementById('searchBtn');
+
+        if (!idValue) {
+            alert("Please enter an ID.");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Searching...";
+        resultArea.style.display = "none";
+
+        try {
+            // التعديل هنا: استخدام passenger_id بدلاً من id
+            const { data, error } = await _supabase
+                .from('passengers')
+                .select('*')
+                .eq('passenger_id', idValue) 
+                .maybeSingle();
+
+            resultArea.style.display = "block";
+
+            if (error) {
+                resultArea.className = "error-box";
+                resultArea.innerHTML = `❌ Error: ${error.message}`;
+            } else if (!data) {
+                resultArea.className = "error-box";
+                resultArea.innerHTML = `⚠️ No passenger found with ID: <strong>${idValue}</strong>`;
+            } else {
+                resultArea.className = "success-box";
+                resultArea.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 15px; font-weight: bold;">✅ Match Found!</div>
+                    <div class="info-row"><span class="info-label">Name:</span> <span>${data.name || 'N/A'}</span></div>
+                    <div class="info-row"><span class="info-label">Email:</span> <span>${data.email || 'N/A'}</span></div>
+                    <div class="info-row"><span class="info-label">Phone:</span> <span>${data.phone || 'N/A'}</span></div>
+                `;
+            }
+        } catch (err) {
+            resultArea.style.display = "block";
+            resultArea.className = "error-box";
+            resultArea.innerHTML = "❌ Connection failed.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Search Now";
+        }
+    }
+</script>
+</body>
+</html>
