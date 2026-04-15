@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Passenger</title>
+    <title>Manage Passenger - Search & Update</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -85,16 +85,10 @@
         .success-box { background: #f1f9f5; border: 1px solid #d4edda; color: #27ae60; }
         .error-box { background: #fdf2f2; border: 1px solid #f5c6cb; color: #e74c3c; text-align: center; }
 
-        .info-row {
-            margin-bottom: 10px;
-            color: #2c3e50;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
+        .update-btn {
+            background-color: #27ae60;
+            margin-top: 20px;
         }
-
-        .info-label { font-weight: bold; color: var(--accent-color); }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -105,12 +99,13 @@
 <body>
 
     <div class="card">
-        <h2>Search for Passenger</h2>
+        <h2>Manage Passenger</h2>
         <div class="form-group">
-            <label>Passenger ID</label>
-            <input type="text" id="pIDInput" placeholder="Enter passenger_id..." required>
+            <label>Search by Passenger ID</label>
+            <input type="text" id="pIDInput" placeholder="Enter passenger_id (e.g. P-1002)..." required>
         </div>
-        <button onclick="searchPassenger()" id="searchBtn">Search Now</button>
+        <button onclick="searchPassenger()" id="searchBtn">Find Passenger</button>
+        
         <div id="resultArea"></div>
     </div>
 
@@ -118,6 +113,8 @@
     const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPassengerId = null;
 
     async function searchPassenger() {
         const idValue = document.getElementById('pIDInput').value.trim();
@@ -134,7 +131,6 @@
         resultArea.style.display = "none";
 
         try {
-            // التعديل هنا: استخدام passenger_id بدلاً من id
             const { data, error } = await _supabase
                 .from('passengers')
                 .select('*')
@@ -150,12 +146,23 @@
                 resultArea.className = "error-box";
                 resultArea.innerHTML = `⚠️ No passenger found with ID: <strong>${idValue}</strong>`;
             } else {
+                currentPassengerId = data.passenger_id;
                 resultArea.className = "success-box";
                 resultArea.innerHTML = `
-                    <div style="text-align: center; margin-bottom: 15px; font-weight: bold;">✅ Match Found!</div>
-                    <div class="info-row"><span class="info-label">Name:</span> <span>${data.name || 'N/A'}</span></div>
-                    <div class="info-row"><span class="info-label">Email:</span> <span>${data.email || 'N/A'}</span></div>
-                    <div class="info-row"><span class="info-label">Phone:</span> <span>${data.phone || 'N/A'}</span></div>
+                    <div style="text-align: center; margin-bottom: 15px; font-weight: bold; color: #2c3e50;">✅ Edit Information</div>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editName" value="${data.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="editEmail" value="${data.email || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="editPhone" value="${data.phone || ''}">
+                    </div>
+                    <button onclick="updatePassenger()" id="updateBtn" class="update-btn">Save Changes (Update)</button>
                 `;
             }
         } catch (err) {
@@ -164,7 +171,35 @@
             resultArea.innerHTML = "❌ Connection failed.";
         } finally {
             btn.disabled = false;
-            btn.innerText = "Search Now";
+            btn.innerText = "Find Passenger";
+        }
+    }
+
+    
+    async function updatePassenger() {
+        const btn = document.getElementById('updateBtn');
+        const newName = document.getElementById('editName').value;
+        const newEmail = document.getElementById('editEmail').value;
+        const newPhone = document.getElementById('editPhone').value;
+
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
+        try {
+            const { error } = await _supabase
+                .from('passengers')
+                .update({ name: newName, email: newEmail, phone: newPhone })
+                .eq('passenger_id', currentPassengerId);
+
+            if (error) throw error;
+
+            alert("✅ Passenger information updated successfully!");
+            searchPassenger(); 
+        } catch (err) {
+            alert("❌ Update failed: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Save Changes (Update)";
         }
     }
 </script>
