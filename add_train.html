@@ -182,7 +182,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('trains').insert([{ name, number, capacity }]);
+            const { data, error } = await supabaseClient.from('trains').insert([{ name, number, capacity, available_seats: capacity }]);
 
             if (error) {
                 document.getElementById('message').innerHTML = '<span style="color:red;">Error: ${error.message}</span>';

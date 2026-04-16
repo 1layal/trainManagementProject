@@ -75,13 +75,27 @@
 border-radius:20px;"></span></h2>
  <div id="userInfo"></div>
  <div class="action-buttons">
- <a href="add_train.html">Add Train</a>
- <a href="manage_trains.html">Manage Trains</a>
- <a href="add_passenger.html">Add Passenger</a>
- <a href="book_ticket.html">Book Ticket</a>
- <a href="search_passenger.html">Search Passenger</a>
- <button id="logoutBtn" class="btn-accent">Logout</button>
- </div>
+    <!-- Admin-only links -->
+    <a href="add_train.html" class="admin-only">Add Train</a>
+    <a href="manage_trains.html" class="admin-only">Manage Trains</a>
+    <a href="displayRevenues.html" class="admin-only">View Revenues</a>
+    <a href="schedule.html" class="admin-only">Schedule Managemet</a>
+
+    <!-- Both roles -->
+    <a href="addPassenger.html">Add Passenger</a>
+    <a href="searchPassenger.html">Manage Passenger</a>
+    <a href="viewPassengerHistory.html">Passenger History</a>
+    <a href="bookTicket.html">Book Ticket</a>
+    
+    <a href="deleteReservation.html">Cancel Reservation</a>
+    <a href="modify.html">Modify Bookings</a>
+
+    <!-- Backup button (admin-only) -->
+   
+
+    <!-- Logout button -->
+    <button id="logoutBtn">Logout</button>
+</div>
  </div>
  <!-- KPI Section -->
  <div class="card">
@@ -91,6 +105,11 @@ border-radius:20px;"></span></h2>
  </div>
  </div>
  <!-- Periodic Booking Reports (Admin only) -->
+  <div class="card admin-only">
+    <h3>Backup & Export</h3>
+    <button id="backupBtn" class="btn-accent">Export All Data (CSV)</button>
+    <p style="margin-top:10px; font-size:0.8em;">Exports trains, passengers, and bookings.</p>
+</div>
  <div id="reportsCard" class="card admin-only">
  <h3>Periodic Booking Reports</h3>
  <div class="form-group">
@@ -111,23 +130,59 @@ border-radius:20px;"></span></h2>
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
- let currentUserRole = 'staff';
- // ========== 2. Check Authentication ==========
- (async () => {
- const { data: { session }, error } = await supabaseClient.auth.getSession();
- if (error || !session) {
- window.location.href = 'login.html';
- return;
- }
- currentUserRole = session.user.user_metadata?.role || 'staff';
- document.getElementById('roleBadge').innerText = currentUserRole.toUpperCase();
- document.getElementById('userInfo').innerHTML = `Logged in as: ${session.user.email} (${currentUserRole})`;
- if (currentUserRole === 'admin') {
- document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
- document.getElementById('generateReportBtn').addEventListener('click', generateReport);
- }
- await loadKPIs();
- })();
+const userRole = localStorage.getItem('userRole') || 'staff';
+    const userEmail = localStorage.getItem('userEmail') || 'unknown';
+    document.getElementById('roleBadge').innerText = userRole.toUpperCase();
+    document.getElementById('userInfo').innerHTML =` Logged in as: ${userEmail} (${userRole})`;
+
+    if (userRole === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+    }
+    //download CSV file
+    async function exportAllData() {
+    try {
+        // Fetch all data from each table
+        const { data: trains } = await supabaseClient.from('trains').select('*');
+        const { data: passengers } = await supabaseClient.from('passengers').select('*');
+        const { data: bookings } = await supabaseClient.from('Booking').select('*');
+
+        let allCsv = '';
+
+        // Helper to convert array of objects to CSV
+        function arrayToCsv(data) {
+            if (!data || data.length === 0) return '';
+            const headers = Object.keys(data[0]);
+            const rows = data.map(row => headers.map(h => JSON.stringify(row[h] ?? '').replace(/,/g, ';')).join(','));
+            return [headers.join(','), ...rows].join('\n');
+        }
+
+        allCsv += '--- TRAINS ---\n' + arrayToCsv(trains) + '\n\n';
+        allCsv += '--- PASSENGERS ---\n' + arrayToCsv(passengers) + '\n\n';
+        allCsv += '--- BOOKINGS ---\n' + arrayToCsv(bookings);
+
+        // Download
+        const blob = new Blob([allCsv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `backup_${new Date().toISOString().slice(0,19)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        alert('Backup exported successfully!');
+    } catch (err) {
+        console.error(err);
+        alert('Export failed: ' + err.message);
+    }
+}
+// ========== Attach event listener (only if admin) ==========
+// Assuming you already have a variable userRole from localStorage or session
+
+if (userRole === 'admin') {
+    const backupBtn = document.getElementById('backupBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', exportAllData);
+    }
+}
  // ========== 3. KPI Function (using your actual column names) ==========
  async function loadKPIs() {
  try {
@@ -175,61 +230,83 @@ Occupancy</div></div>
  }
  }
  // ========== 4. Periodic Booking Reports ==========
- async function generateReport() {
- const period = document.getElementById('reportPeriod').value;
- let startDate;
- const now = new Date();
- if (period === 'day') {
- startDate = new Date(now.setHours(0,0,0,0)).toISOString();
- } else if (period === 'week') {
- startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
- } else {
- startDate = new Date(now.setDate(now.getDate() - 30)).toISOString();
- }
- // Query Booking table with passenger and train details
- const { data: bookings, error } = await supabaseClient.from('Booking').select(`
- ID_booking,
- name,
- booking_date,
- ticket_price,
- train_ID,
- passenger_ID,
- trains:train_ID (name, number),
- passengers:passenger_ID (name, phone, email)
- `)
- .gte('booking_date', startDate);
- if (error) {
- alert('Error loading reports: ' + error.message);
- return;
- }
- if (!bookings || bookings.length === 0) {
- document.getElementById('reportResult').innerHTML = '<p>No bookings in this period.</p>';
- return;
- }
- let totalRevenue = 0;
- let html = `<table><thead><tr><th>ID</th><th>Passenger
-Name</th><th>Train</th><th>Date</th><th>Price</th></tr></thead><tbody>`;
- bookings.forEach(b => {
- totalRevenue += b.ticket_price || 0;
- const passengerName = b.passengers ? b.passengers.name : (b.name || 'N/A');
- const trainName = b.trains ? b.trains.name : `Train ${b.train_ID}`;
- html += `<tr>
- <td>${b.ID_booking}</td>
- <td>${passengerName}</td>
- <td>${trainName}</td>
- <td>${new Date(b.booking_date).toLocaleDateString()}</td>
- <td>$${b.ticket_price?.toFixed(2) || '0.00'}</td>
- </tr>`;
- });
- html += `</tbody><tfoot><tr><td colspan="4"><strong>Total
-Revenue</strong></td><td><strong>$${totalRevenue.toFixed(2)}</strong></td></tr></tfoot>`;
- document.getElementById('reportResult').innerHTML = html;
- }
+async function generateReport() {
+    const period = document.getElementById('reportPeriod').value;
+    let startDate;
+
+    if (period === 'day') {
+        startDate = new Date(new Date().setHours(0,0,0,0)).toISOString();
+    } else if (period === 'week') {
+        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else {
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    const { data: bookings, error } = await supabaseClient
+        .from('Booking')
+        .select('id_booking, name, booking_date, ticket_price, train_id, passenger_id')
+        .gte('booking_date', startDate);
+
+    if (error) {
+        alert('Error loading reports: ' + error.message);
+        return;
+    }
+
+    if (!bookings || bookings.length === 0) {
+        document.getElementById('reportResult').innerHTML = '<p>No bookings in this period.</p>';
+        return;
+    }
+
+    let totalRevenue = 0;
+
+    let html = `
+    <table>
+    <thead>
+    <tr>
+        <th>Booking ID</th>
+        <th>Passenger Name</th>
+        <th>Train ID</th>
+        <th>Date</th>
+        <th>Price</th>
+    </tr>
+    </thead>
+    <tbody>
+    `;
+
+    bookings.forEach(b => {
+        const price = Number(b.ticket_price) || 0;
+        totalRevenue += price;
+
+        html += `
+        <tr>
+            <td>${b.ID_booking}</td>
+            <td>${b.name || 'N/A'}</td>
+            <td>${b.train_ID || 'N/A'}</td>
+            <td>${new Date(b.booking_date).toLocaleDateString()}</td>
+            <td>$${price.toFixed(2)}</td>
+        </tr>
+        `;
+    });
+
+    html += `
+    </tbody>
+    <tfoot>
+    <tr>
+        <td colspan="4"><strong>Total Revenue</strong></td>
+        <td><strong>$${totalRevenue.toFixed(2)}</strong></td>
+    </tr>
+    </tfoot>
+    </table>
+    `;
+
+    document.getElementById('reportResult').innerHTML = html;
+}
  // ========== 5. Logout ==========
  document.getElementById('logoutBtn').addEventListener('click', async () => {
  await supabaseClient.auth.signOut();
  window.location.href = 'login.html';
  });
+ loadKPIs();
 </script>
 </body>
 </html>
