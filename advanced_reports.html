@@ -19,13 +19,13 @@
         label { font-weight: bold; margin-bottom: 5px; color: #475569; }
         input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e0; }
         
-        .btn-main { background: #9139f1; color: white; border: none; cursor: pointer; font-weight: bold; }
-        .btn-main:hover { background: #7616d8; }
+        .btn-main { background: #471b73; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .btn-main:hover { background: #471b73; }
 
         /* العدادات */
         .stats-grid { display: none; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
         .stat-card { padding: 20px; border-radius: 15px; text-align: center; color: white; }
-        .eco { background: #0ea5e9; } .biz { background: #f59e0b; } .first { background: #9139f1; }
+        .eco { background: #280f55; } .biz { background: #25215e; } .first { background: #311b48; }
         .stat-card h3 { margin: 0; font-size: 1rem; opacity: 0.9; }
         .stat-card p { font-size: 2rem; margin: 10px 0; font-weight: bold; }
 
@@ -165,7 +165,7 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         doc.text("Advanced Train Capacity Report", 14, 15);
-        doc.autoTable({ html: '#reportTable', marginTop: 25 });
+        doc.autoTable({ html: '#reportTable', marginTop: 30 });
         doc.save("Train_Advanced_Report.pdf");
     }
 </script>
