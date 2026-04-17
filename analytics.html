@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Station Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .stats { display: flex; gap: 20px; margin-bottom: 20px; }
+        .box { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #eee; }
+        .val { font-size: 24px; font-weight: bold; color: #8e44ad; }
+        select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Trips Analytics</h2>
+        <select id="cityFilter" onchange="updateDashboard()">
+            <option value="all">All Stations</option>
+        </select>
+    </div>
+
+    <div class="stats">
+        <div class="box"><div>Total Bookings</div><div id="totalBookings" class="val">0</div></div>
+        <div class="box"><div>Total Revenue</div><div id="totalRevenue" class="val">0 SAR</div></div>
+    </div>
+
+    <canvas id="tripsChart"></canvas>
+</div>
+
+<script>
+    const S_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    let dbData = [];
+    let myChart = null;
+
+    async function getData() {
+        const { data, error } = await _supabase
+            .from('schedules')
+            .select('to_station, Booking(ticket_price)');
+
+        if (error) return;
+        dbData = data;
+
+        
+        const filter = document.getElementById('cityFilter');
+        const stations = [...new Set(data.map(d => d.to_station).filter(s => s))];
+        stations.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = opt.text = s;
+            filter.add(opt);
+        });
+
+        updateDashboard();
+    }
+
+    function updateDashboard() {
+        const selected = document.getElementById('cityFilter').value;
+        const counts = {};
+        let rev = 0;
+        let books = 0;
+
+        dbData.forEach(item => {
+            const stationName = item.to_station || "Unknown";
+            const bookings = item.Booking || [];
+            
+            if (selected === 'all' || stationName === selected) {
+                books += bookings.length;
+                counts[stationName] = (counts[stationName] || 0) + bookings.length;
+                bookings.forEach(b => rev += (Number(b.ticket_price) || 0));
+            }
+        });
+
+        document.getElementById('totalBookings').innerText = books;
+        document.getElementById('totalRevenue').innerText = rev + " SAR";
+        
+        drawChart(counts);
+    }
+
+    function drawChart(chartData) {
+        const ctx = document.getElementById('tripsChart').getContext('2d');
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(chartData), 
+                datasets: [{
+                    label: 'Number of Passengers',
+                    data: Object.values(chartData),
+                    backgroundColor: '#8e44ad',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    }
+
+    getData();
+</script>
+</body>
+</html>
