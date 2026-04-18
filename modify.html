@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Modify Booking & Capacity</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify Booking & Seats</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -15,7 +16,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg-color);
             margin: 0;
             display: flex;
@@ -36,75 +37,23 @@
             box-sizing: border-box;
         }
 
-        h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        h2 { color: var(--primary-color); text-align: center; margin-bottom: 25px; text-transform: uppercase; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; }
+        input, select { 
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; 
+            font-size: 15px; box-sizing: border-box; outline: none;
         }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
+        input:focus, select:focus { border-color: var(--accent-color); }
+        button { 
+            width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; 
+            cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px;
         }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #444;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease;
-            outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--accent-color);
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-accent {
-            background-color: var(--accent-color);
-            color: white;
-        }
-
-        button:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
-
-        /* قسم التعديل مخفي في البداية */
-        #editSection {
-            display: none;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px dashed #eee;
-        }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-accent { background-color: var(--accent-color); color: white; }
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #editSection { display: none; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #eee; }
     </style>
 </head>
 <body>
@@ -114,31 +63,26 @@
     
     <div id="searchSection">
         <div class="form-group">
-            <label>Passenger Name</label>
-            <input type="text" id="searchName" placeholder="Name as booked">
-        </div>
-        <div class="form-group">
             <label>Passenger ID</label>
-            <input type="text" id="searchID" placeholder="National ID">
+            <input type="text" id="searchID" placeholder="Enter National ID (e.g. P1001)">
         </div>
-        <button class="btn-primary" onclick="verifyAndSearch()">Find My Record</button>
+        <button class="btn-primary" onclick="searchByPassport()">Find My Booking</button>
     </div>
 
     <div id="editSection">
         <div class="form-group">
-            <label>Update Name</label>
+            <label>Full Name</label>
             <input type="text" id="editName">
         </div>
 
         <div class="form-group">
-            <label>Update Date</label>
+            <label>Travel Date</label>
             <input type="date" id="editDate">
         </div>
 
         <div class="form-group">
             <label>Change Train</label>
-            <select id="editTrain">
-                </select>
+            <select id="editTrain"></select>
         </div>
 
         <button class="btn-accent" id="saveBtn" onclick="applyFullUpdate()">Save All Changes</button>
@@ -152,6 +96,7 @@
 
     let oldBooking = null;
 
+    // جلب قائمة القطارات عند التحميل
     async function loadTrains() {
         const { data } = await _supabase.from('trains').select('id, name');
         const select = document.getElementById('editTrain');
@@ -163,16 +108,19 @@
         });
     }
 
-    async function verifyAndSearch() {
-        const name = document.getElementById('searchName').value;
-        const p_id = document.getElementById('searchID').value;
+    // البحث باستخدام الـ ID فقط
+    async function searchByPassport() {
+        const p_id = document.getElementById('searchID').value.trim();
+        if(!p_id) { alert("Please enter Passenger ID"); return; }
 
-        if(!name || !p_id) { alert("Please fill all search fields"); return; }
-
-        const { data: pVerify } = await _supabase.from('passengers').select('*').eq('passenger_id', p_id).maybeSingle();
-        if (!pVerify) { alert("Passenger ID not found!"); return; }
-
-        const { data: bData } = await _supabase.from('Booking').select('*').eq('name', name).maybeSingle();
+        // البحث عن آخر حجز لهذا المعرف
+        const { data: bData, error } = await _supabase
+            .from('Booking')
+            .select('*')
+            .eq('passenger_id', p_id)
+            .order('booking_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
         
         if (bData) {
             oldBooking = bData;
@@ -181,9 +129,9 @@
             document.getElementById('editDate').value = bData.booking_date;
             if (bData.train_id) document.getElementById('editTrain').value = bData.train_id;
             
-            alert("Record verified. You can modify now.");
+            alert("Booking found! You can now update the details.");
         } else {
-            alert("No booking found for this name.");
+            alert("No booking found for this ID.");
         }
     }
 
@@ -195,35 +143,40 @@
 
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.disabled = true;
-        saveBtn.innerText = "Updating...";
+        saveBtn.innerText = "Processing Update...";
 
-        if (oldTrainId && oldTrainId != newTrainId) {
-            const { data: oldT } = await _supabase.from('trains').select('capacity').eq('id', oldTrainId).single();
-            await _supabase.from('trains').update({ capacity: oldT.capacity + 1 }).eq('id', oldTrainId);
+        try {
+            // التحقق إذا تغير القطار لتعديل المقاعد المتاحة (available_seats)
+            if (oldTrainId && oldTrainId != newTrainId) {
+                
+                // 1. إعادة مقعد للقطار القديم
+                const { data: oldT } = await _supabase.from('trains').select('available_seats').eq('id', oldTrainId).single();
+                await _supabase.from('trains').update({ available_seats: (oldT.available_seats || 0) + 1 }).eq('id', oldTrainId);
 
-            const { data: newT } = await _supabase.from('trains').select('capacity').eq('id', newTrainId).single();
-            if (newT.capacity <= 0) {
-                alert("New selected train is full!");
-                saveBtn.disabled = false;
-                saveBtn.innerText = "Save All Changes";
-                return;
+                // 2. التحقق من القطار الجديد وخصم مقعد
+                const { data: newT } = await _supabase.from('trains').select('available_seats').eq('id', newTrainId).single();
+                if (newT.available_seats <= 0) {
+                    throw new Error("The new selected train is full!");
+                }
+                await _supabase.from('trains').update({ available_seats: newT.available_seats - 1 }).eq('id', newTrainId);
             }
-            await _supabase.from('trains').update({ capacity: newT.capacity - 1 }).eq('id', newTrainId);
-        }
 
-        const { error } = await _supabase.from('Booking')
-            .update({ 
-                name: newName, 
-                booking_date: newDate,
-                train_id: newTrainId 
-            })
-            .eq('id_booking', oldBooking.id_booking);
+            // تحديث سجل الحجز
+            const { error: updateError } = await _supabase.from('Booking')
+                .update({ 
+                    name: newName, 
+                    booking_date: newDate,
+                    train_id: newTrainId 
+                })
+                .eq('id_booking', oldBooking.id_booking);
 
-        if (!error) {
-            alert("Update successful!");
+            if (updateError) throw updateError;
+
+            alert("Booking updated successfully! Seats adjusted.");
             location.reload();
-        } else {
-            alert("Error: " + error.message);
+
+        } catch (err) {
+            alert("Error: " + err.message);
             saveBtn.disabled = false;
             saveBtn.innerText = "Save All Changes";
         }
