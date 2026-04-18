@@ -39,41 +39,20 @@
         }
 
         h2 { color: var(--primary-color); margin-bottom: 25px; text-transform: uppercase; font-size: 1.4rem; }
-
         .form-group { margin-bottom: 20px; text-align: left; }
-        
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
-
         input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 14px;
-            outline: none;
-            box-sizing: border-box;
-            transition: 0.3s;
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;
+            outline: none; box-sizing: border-box; transition: 0.3s;
         }
-
         input:focus, select:focus { border-color: var(--accent-color); }
-
         button { 
-            width: 100%; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            background-color: var(--accent-color); 
-            color: white; 
-            margin-top: 10px;
-            font-size: 16px;
-            transition: 0.3s;
+            width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; 
+            cursor: pointer; background-color: var(--accent-color); color: white; margin-top: 10px;
+            font-size: 16px; transition: 0.3s;
         }
-
         button:hover { filter: brightness(1.1); transform: translateY(-2px); }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-
         .status { margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-size: 14px; line-height: 1.5; }
         .success { background: #e6fffa; color: #234e52; border: 1px solid #b2f5ea; }
         .error { background: #fff5f5; color: #742a2a; border: 1px solid #feb2b2; }
@@ -83,8 +62,6 @@
 
     <div class="card">
         <h2>Book Ticket</h2>
-        <p style="color: #666; font-size: 13px; margin-bottom: 20px;"></p>
-        
         <form id="bookingForm">
             <div class="form-group">
                 <label>Passenger ID</label>
@@ -110,7 +87,6 @@
 
             <button type="submit" id="submitBtn">Confirm Booking</button>
         </form>
-
         <div id="statusArea" class="status"></div>
     </div>
 
@@ -151,8 +127,6 @@
 
         const pID = document.getElementById('pID').value.trim();
         const sID = document.getElementById('tripSelect').value;
-        
-        // جلب نوع التذكرة والسعر من القائمة المنسدلة
         const typeSelect = document.getElementById('ticketType');
         const tType = typeSelect.value;
         const tPrice = typeSelect.selectedOptions[0].getAttribute('data-price');
@@ -168,13 +142,21 @@
 
             const { data: sData, error: sError } = await _supabase
                 .from('schedules')
-                .select('train_id')
+                .select(`
+                    train_id,
+                    trains (available_seats)
+                `)
                 .eq('id', sID)
                 .single();
 
             if (sError || !sData) throw new Error("Trip information missing.");
+            
+            const availableSeats = sData.trains.available_seats;
 
-            // تنفيذ الحجز مع إضافة النوع والسعر
+            if (availableSeats <= 0) {
+                throw new Error("Sorry, no available seats on this train.");
+            }
+
             const { error: bError } = await _supabase
                 .from('Booking')
                 .insert([{
@@ -182,15 +164,22 @@
                     name: pData.name,
                     schedule_id: sID,
                     train_id: sData.train_id,
-                    ticket_type: tType,   // العمود الجديد 1
-                    ticket_price: tPrice, // العمود الجديد 2
+                    ticket_type: tType,
+                    ticket_price: tPrice,
                     booking_date: new Date().toISOString().split('T')[0]
                 }]);
 
             if (bError) throw bError;
 
+            const { error: uError } = await _supabase
+                .from('trains')
+                .update({ available_seats: availableSeats - 1 })
+                .eq('id', sData.train_id); 
+
+            if (uError) throw uError;
+
             status.className = "status success";
-            status.innerHTML = `✅ <b>Success!</b><br>Class: ${tType} (${tPrice} SAR)<br>Passenger: ${pData.name}`;
+            status.innerHTML = `✅ <b>Booking Successful!</b><br>Class: ${tType}<br>Remaining Seats: ${availableSeats - 1}`;
             status.style.display = "block";
             document.getElementById('bookingForm').reset();
 
@@ -198,6 +187,7 @@
             status.className = "status error";
             status.innerHTML = "❌ <b>Failed:</b> " + err.message;
             status.style.display = "block";
+            console.error(err);
         } finally {
             btn.disabled = false;
             btn.innerText = "Confirm Booking";

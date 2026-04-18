@@ -1,259 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Reservation Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        :root { --primary: #2c3e50; --accent: #8e44ad; --bg: #f4f7f6; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg);
-            margin: 0;
-            padding: 20px;
-        }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 25px;
-            margin-bottom: 25px;
-            border-top: 8px solid var(--accent);
-        }
-        h2, h3 { color: var(--primary); margin-top: 0; }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-        .metric-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .metric-value { font-size: 2.2em; font-weight: bold; color: var(--primary); }
-        .metric-label { color: #666; margin-top: 8px; }
-        select, button {
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            font-size: 1rem;
-        }
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover { background: #1e2b36; }
-        .btn-accent { background: var(--accent); }
-        .btn-accent:hover { background: #6c3483; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: var(--primary); color: white; }
-        .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-        .action-buttons a {
-            background: var(--primary);
-            color: white;
-            padding: 8px 15px;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-        .admin-only { display: none; }
-        .error { color: red; text-align: center; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        canvas { max-height: 400px; width: 100% !important; }
-    </style>
+ <meta charset="UTF-8">
+ <title>Train Dashboard</title>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <style>
+ * { box-sizing: border-box; }
+ :root { --primary: #2c3e50; --accent: #8e44ad; --bg: #f4f7f6; }
+ body {
+ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+ background: var(--bg);
+ margin: 0;
+ padding: 20px;
+ }
+ .container { max-width: 1200px; margin: 0 auto; }
+ .card {
+ background: white;
+ border-radius: 15px;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+ padding: 25px;
+ margin-bottom: 25px;
+ border-top: 8px solid var(--accent);
+ }
+ h2, h3 { color: var(--primary); margin-top: 0; }
+ .dashboard-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+ gap: 20px;
+ margin: 20px 0;
+ }
+ .metric-card {
+ background: #f8f9fa;
+ border-radius: 10px;
+ padding: 20px;
+ text-align: center;
+ box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+ }
+ .metric-value { font-size: 2.2em; font-weight: bold; color: var(--primary); }
+ .metric-label { color: #666; margin-top: 8px; }
+ select, button {
+ padding: 10px 15px;
+ border-radius: 8px;
+ border: 1px solid #ddd;
+ font-size: 1rem;
+ }
+ button {
+ background: var(--primary);
+ color: white;
+ border: none;
+ cursor: pointer;
+ }
+ button:hover { background: #1e2b36; }
+ .btn-accent { background: var(--accent); }
+ .btn-accent:hover { background: #6c3483; }
+ table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+ th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+ th { background: var(--primary); color: white; }
+ .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+ .action-buttons a {
+ background: var(--primary);
+ color: white;
+ padding: 8px 15px;
+ text-decoration: none;
+ border-radius: 8px;
+ }
+ .admin-only { display: none; }
+ .error { color: red; text-align: center; }
+ </style>
 </head>
 <body>
 <div class="container">
-    <div class="card">
-        <h2>Train Reservation Dashboard <span id="roleBadge" style="font-size:0.6em; background:var(--accent); padding:5px 10px; border-radius:20px;"></span></h2>
-        <div id="userInfo"></div>
-        <div class="action-buttons">
-            <a href="add_train.html">Add Train</a>
-            <a href="manage_trains.html">Manage Trains</a>
-            <a href="add_passenger.html">Add Passenger</a>
-            <a href="book_ticket.html">Book Ticket</a>
-            <a href="search_passenger.html">Search Passenger</a>
-            <button id="logoutBtn" class="btn-accent">Logout</button>
-        </div>
-    </div>
+ <div class="card">
+ <h2>Train Reservation Dashboard <span id="roleBadge" style="font-size:0.6em; background:var(--accent); padding:5px 10px;
+border-radius:20px;"></span></h2>
+ <div id="userInfo"></div>
+ <div class="action-buttons">
+    <!-- Admin-only links -->
+    <a href="add_train.html" class="admin-only">Add Train</a>
+    <a href="manage_trains.html" class="admin-only">Manage Trains</a>
+    <a href="displayRevenues.html" class="admin-only">View Revenues</a>
+    <a href="schedule.html" class="admin-only">Schedule Managemet</a>
 
-    <div class="card">
-        <h3>Key Performance Indicators</h3>
-        <div id="kpiGrid" class="dashboard-grid">
-            <div class="metric-card"><div class="metric-value">Loading...</div><div class="metric-label">Please wait</div></div>
-        </div>
-    </div>
+    <!-- Both roles -->
+    <a href="addPassenger.html">Add Passenger</a>
+    <a href="searchPassenger.html">Manage Passenger</a>
+    <a href="viewPassengerHistory.html">Passenger History</a>
+    <a href="bookTicket.html">Book Ticket</a>
+    
+    <a href="deleteReservation.html">Cancel Reservation</a>
+    <a href="modify.html">Modify Bookings</a>
 
-    <div class="card">
-        <div class="header-flex">
-            <h3>Trips Performance Analytics</h3>
-            <select id="cityFilter" onchange="updateAnalyticsView()">
-                <option value="all">All Stations</option>
-            </select>
-        </div>
-        <canvas id="tripsChart"></canvas>
-    </div>
+    <!-- Backup button (admin-only) -->
+   
 
-    <div id="reportsCard" class="card admin-only">
-        <h3>Periodic Booking Reports</h3>
-        <div class="form-group">
-            <label>Period</label>
-            <select id="reportPeriod">
-                <option value="day">Daily (today)</option>
-                <option value="week">Weekly (last 7 days)</option>
-                <option value="month">Monthly (last 30 days)</option>
-            </select>
-            <button id="generateReportBtn">Generate Report</button>
-        </div>
-        <div id="reportResult"></div>
-    </div>
+    <!-- Logout button -->
+    <button id="logoutBtn">Logout</button>
 </div>
-
+ </div>
+ <!-- KPI Section -->
+ <div class="card">
+ <h3>Key Performance Indicators</h3>
+ <div id="kpiGrid" class="dashboard-grid">
+ <div class="metric-card"><div class="metric-value">Loading...</div><div class="metric-label">Please wait</div></div>
+ </div>
+ </div>
+ <!-- Periodic Booking Reports (Admin only) -->
+  <div class="card admin-only">
+    <h3>Backup & Export</h3>
+    <button id="backupBtn" class="btn-accent">Export All Data (CSV)</button>
+    <p style="margin-top:10px; font-size:0.8em;">Exports trains, passengers, and bookings.</p>
+</div>
+ <div id="reportsCard" class="card admin-only">
+ <h3>Periodic Booking Reports</h3>
+ <div class="form-group">
+ <label>Period</label>
+ <select id="reportPeriod">
+ <option value="day">Daily (today)</option>
+ <option value="week">Weekly (last 7 days)</option>
+ <option value="month">Monthly (last 30 days)</option>
+ </select>
+ <button id="generateReportBtn">Generate Report</button>
+ </div>
+ <div id="reportResult"></div>
+ </div>
+</div>
 <script>
-    // ========== 1. Supabase Client Configuration ==========
-    const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ // ========== 1. Supabase Client (MUST be correct) ==========
+             const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentUserRole = 'staff';
-    let myChart = null;
-    let cachedData = [];
+const userRole = localStorage.getItem('userRole') || 'staff';
+    const userEmail = localStorage.getItem('userEmail') || 'unknown';
+    document.getElementById('roleBadge').innerText = userRole.toUpperCase();
+    document.getElementById('userInfo').innerHTML =` Logged in as: ${userEmail} (${userRole})`;
 
-    // ========== 2. Check Authentication & Initialize ==========
-    (async () => {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
-        if (error || !session) {
-            window.location.href = 'login.html';
-            return;
-        }
-        currentUserRole = session.user.user_metadata?.role || 'staff';
-        document.getElementById('roleBadge').innerText = currentUserRole.toUpperCase();
-        document.getElementById('userInfo').innerHTML = `Logged in as: ${session.user.email} (${currentUserRole})`;
-        
-        if (currentUserRole === 'admin') {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-            document.getElementById('generateReportBtn').addEventListener('click', generateReport);
-        }
-
-        await loadKPIs();
-        await loadAnalyticsData();
-    })();
-
-    // ========== 3. KPI Function ==========
-    async function loadKPIs() {
-        try {
-            const { count: trainCount } = await supabaseClient.from('trains').select('*', { count: 'exact', head: true });
-            const { count: passengerCount } = await supabaseClient.from('passengers').select('*', { count: 'exact', head: true });
-            const { count: bookingCount } = await supabaseClient.from('Booking').select('*', { count: 'exact', head: true });
-            
-            const { data: bookings } = await supabaseClient.from('Booking').select('ticket_price');
-            const totalRevenue = bookings?.reduce((sum, b) => sum + (b.ticket_price || 0), 0) || 0;
-
-            const { data: trains } = await supabaseClient.from('trains').select('capacity');
-            const totalCapacity = trains?.reduce((sum, t) => sum + (t.capacity || 0), 0) || 0;
-            const occupancyRate = totalCapacity ? ((bookingCount / totalCapacity) * 100).toFixed(1) : 0;
-
-            document.getElementById('kpiGrid').innerHTML = `
-                <div class="metric-card"><div class="metric-value">${trainCount ?? 0}</div><div class="metric-label">Trains</div></div>
-                <div class="metric-card"><div class="metric-value">${passengerCount ?? 0}</div><div class="metric-label">Passengers</div></div>
-                <div class="metric-card"><div class="metric-value">${bookingCount ?? 0}</div><div class="metric-label">Bookings</div></div>
-                <div class="metric-card"><div class="metric-value">$${totalRevenue.toFixed(2)}</div><div class="metric-label">Revenue</div></div>
-                <div class="metric-card"><div class="metric-value">${occupancyRate}%</div><div class="metric-label">Occupancy</div></div>
-            `;
-        } catch (err) {
-            document.getElementById('kpiGrid').innerHTML = `<div class="error">Failed to load KPIs</div>`;
-        }
+    if (userRole === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.getElementById('generateReportBtn').addEventListener('click', generateReport);
     }
+    //download CSV file
+    async function exportAllData() {
+    try {
+        // Fetch all data from each table
+        const { data: trains } = await supabaseClient.from('trains').select('*');
+        const { data: passengers } = await supabaseClient.from('passengers').select('*');
+        const { data: bookings } = await supabaseClient.from('Booking').select('*');
 
-    // ========== 4. Analytics & Chart (Your Mission) ==========
-    async function loadAnalyticsData() {
-        const { data, error } = await supabaseClient.from('schedules').select('to_station, Booking(ticket_price)');
-        if (error) return;
-        cachedData = data;
+        let allCsv = '';
 
-        const cities = [...new Set(data.map(item => item.to_station).filter(c => c))];
-        const select = document.getElementById('cityFilter');
-        cities.forEach(city => {
-            const opt = document.createElement('option');
-            opt.value = opt.text = city;
-            select.add(opt);
-        });
-
-        updateAnalyticsView();
-    }
-
-    function updateAnalyticsView() {
-        const filter = document.getElementById('cityFilter').value;
-        const cityMap = {};
-
-        cachedData.forEach(item => {
-            const city = item.to_station;
-            if (!city) return;
-            const bookings = item.Booking || [];
-            if (filter === 'all' || city === filter) {
-                cityMap[city] = (cityMap[city] || 0) + bookings.length;
-            }
-        });
-
-        const ctx = document.getElementById('tripsChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(cityMap),
-                datasets: [{
-                    label: 'Passengers per Station',
-                    data: Object.values(cityMap),
-                    backgroundColor: '#8e44ad',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-    }
-
-    // ========== 5. Admin Reports ==========
-    async function generateReport() {
-        const period = document.getElementById('reportPeriod').value;
-        let startDate = new Date();
-        if (period === 'day') startDate.setHours(0,0,0,0);
-        else if (period === 'week') startDate.setDate(startDate.getDate() - 7);
-        else startDate.setDate(startDate.getDate() - 30);
-
-        const { data: bookings, error } = await supabaseClient.from('Booking').select('*, trains:train_ID(name), passengers:passenger_ID(name)').gte('booking_date', startDate.toISOString());
-        
-        if (error || !bookings.length) {
-            document.getElementById('reportResult').innerHTML = '<p>No bookings found.</p>';
-            return;
+        // Helper to convert array of objects to CSV
+        function arrayToCsv(data) {
+            if (!data || data.length === 0) return '';
+            const headers = Object.keys(data[0]);
+            const rows = data.map(row => headers.map(h => JSON.stringify(row[h] ?? '').replace(/,/g, ';')).join(','));
+            return [headers.join(','), ...rows].join('\n');
         }
 
-        let html = `<table><thead><tr><th>ID</th><th>Passenger</th><th>Train</th><th>Price</th></tr></thead><tbody>`;
-        bookings.forEach(b => {
-            html += `<tr><td>${b.ID_booking}</td><td>${b.passengers?.name || 'N/A'}</td><td>${b.trains?.name || 'N/A'}</td><td>$${b.ticket_price}</td></tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('reportResult').innerHTML = html;
+        allCsv += '--- TRAINS ---\n' + arrayToCsv(trains) + '\n\n';
+        allCsv += '--- PASSENGERS ---\n' + arrayToCsv(passengers) + '\n\n';
+        allCsv += '--- BOOKINGS ---\n' + arrayToCsv(bookings);
+
+        // Download
+        const blob = new Blob([allCsv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `backup_${new Date().toISOString().slice(0,19)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        alert('Backup exported successfully!');
+    } catch (err) {
+        console.error(err);
+        alert('Export failed: ' + err.message);
+    }
+}
+// ========== Attach event listener (only if admin) ==========
+// Assuming you already have a variable userRole from localStorage or session
+
+if (userRole === 'admin') {
+    const backupBtn = document.getElementById('backupBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', exportAllData);
+    }
+}
+ // ========== 3. KPI Function (using your actual column names) ==========
+ async function loadKPIs() {
+ try {
+ // Count trains (table 'trains'? You said columns: ID, name, number, capacity)
+ // Assuming table name is 'trains' (lowercase). Change if different.
+ const { count: trainCount, error: err1 } = await supabaseClient
+ .from('trains')
+ .select('*', { count: 'exact', head: true });
+ if (err1) throw new Error(`Trains: ${err1.message}`);
+ // Count passengers (table 'passengers' with columns: passenger_ID, name, phone, email)
+ const { count: passengerCount, error: err2 } = await supabaseClient.from('passengers')
+ .select('*', { count: 'exact', head: true });
+ if (err2) throw new Error(`Passengers: ${err2.message}`);
+ // Count bookings (table 'Booking' with columns: ID_booking, name, booking_date, train_ID, schedule_ID, passenger_ID,ticket_price)
+ const { count: bookingCount, error: err3 } = await supabaseClient.from('Booking').select('*', { count: 'exact', head: true });
+ if (err3) throw new Error(`Bookings: ${err3.message}`);
+ // Total revenue (sum of ticket_price from Booking)
+ const { data: bookings, error: err4 } = await supabaseClient
+ .from('Booking')
+ .select('ticket_price');
+ if (err4) throw new Error(`Revenue: ${err4.message}`);
+ const totalRevenue = bookings?.reduce((sum, b) => sum + (b.ticket_price || 0), 0) || 0;
+ // Occupancy rate (requires trains.capacity and maybe a way to count booked seats)
+ // Since you have booking table with train_ID, we can count bookings per train
+ // But easier: get total capacity from trains and total bookings (each booking = 1 seat)
+ const { data: trains, error: err5 } = await supabaseClient.from('trains').select('capacity');
+ if (err5) throw new Error(`Occupancy: ${err5.message}`);
+ const totalCapacity = trains?.reduce((sum, t) => sum + (t.capacity || 0), 0) || 0;
+ const occupancyRate = totalCapacity ? ((bookingCount / totalCapacity) * 100).toFixed(1) : 0;
+ const kpiHtml = `
+ <div class="metric-card"><div class="metric-value">${trainCount ?? 0}</div><div class="metric-label"> Trains</div></div>
+ <div class="metric-card"><div class="metric-value">${passengerCount ?? 0}</div><div class="metric-label">
+Passengers</div></div>
+ <div class="metric-card"><div class="metric-value">${bookingCount ?? 0}</div><div class="metric-label">
+Bookings</div></div>
+ <div class="metric-card"><div class="metric-value">$${totalRevenue.toFixed(2)}</div><div class="metric-label">
+Revenue</div></div>
+ <div class="metric-card"><div class="metric-value">${occupancyRate}%</div><div class="metric-label">
+Occupancy</div></div>
+ `;
+ document.getElementById('kpiGrid').innerHTML = kpiHtml;
+ } catch (err) {
+ console.error(err);
+ document.getElementById('kpiGrid').innerHTML = `<div class="error">Failed to load KPIs: ${err.message}</div>`;
+ }
+ }
+ // ========== 4. Periodic Booking Reports ==========
+async function generateReport() {
+    const period = document.getElementById('reportPeriod').value;
+    let startDate;
+
+    if (period === 'day') {
+        startDate = new Date(new Date().setHours(0,0,0,0)).toISOString();
+    } else if (period === 'week') {
+        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else {
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
-    // ========== 6. Logout ==========
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'login.html';
+    const { data: bookings, error } = await supabaseClient
+        .from('Booking')
+        .select('id_booking, name, booking_date, ticket_price, train_id, passenger_id')
+        .gte('booking_date', startDate);
+
+    if (error) {
+        alert('Error loading reports: ' + error.message);
+        return;
+    }
+
+    if (!bookings || bookings.length === 0) {
+        document.getElementById('reportResult').innerHTML = '<p>No bookings in this period.</p>';
+        return;
+    }
+
+    let totalRevenue = 0;
+
+    let html = `
+    <table>
+    <thead>
+    <tr>
+        <th>Booking ID</th>
+        <th>Passenger Name</th>
+        <th>Train ID</th>
+        <th>Date</th>
+        <th>Price</th>
+    </tr>
+    </thead>
+    <tbody>
+    `;
+
+    bookings.forEach(b => {
+        const price = Number(b.ticket_price) || 0;
+        totalRevenue += price;
+
+        html += `
+        <tr>
+            <td>${b.ID_booking}</td>
+            <td>${b.name || 'N/A'}</td>
+            <td>${b.train_ID || 'N/A'}</td>
+            <td>${new Date(b.booking_date).toLocaleDateString()}</td>
+            <td>$${price.toFixed(2)}</td>
+        </tr>
+        `;
     });
+
+    html += `
+    </tbody>
+    <tfoot>
+    <tr>
+        <td colspan="4"><strong>Total Revenue</strong></td>
+        <td><strong>$${totalRevenue.toFixed(2)}</strong></td>
+    </tr>
+    </tfoot>
+    </table>
+    `;
+
+    document.getElementById('reportResult').innerHTML = html;
+}
+ // ========== 5. Logout ==========
+ document.getElementById('logoutBtn').addEventListener('click', async () => {
+ await supabaseClient.auth.signOut();
+ window.location.href = 'login.html';
+ });
+ loadKPIs();
 </script>
 </body>
 </html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro - Cancel Booking</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #2c3e50; --danger: #e74c3c; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid var(--danger); text-align: center; }
+        .search-box { display: flex; gap: 10px; margin: 20px 0; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        button { cursor: pointer; transition: 0.3s; font-weight: bold; border: none; border-radius: 8px; }
+        .btn-search { background: var(--primary); color: white; padding: 0 20px; }
+        .btn-cancel { background: var(--danger); color: white; padding: 8px 15px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; display: none; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .empty { color: #999; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Cancel Reservation</h2>
+    <div class="search-box">
+        <input type="text" id="pID" placeholder="Enter Passenger ID">
+        <button class="btn-search" onclick="fetchData()">Search</button>
+    </div>
+    <table id="resTable">
+        <thead><tr><th>Booking ID</th><th>Trip</th><th>Action</th></tr></thead>
+        <tbody id="resBody"></tbody>
+    </table>
+    <div id="noRes" class="empty">No bookings found or connection error.</div>
+</div>
+
+<script>
+    const S_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    async function fetchData() {
+        const id = document.getElementById('pID').value.trim();
+        const table = document.getElementById('resTable');
+        const body = document.getElementById('resBody');
+        const msg = document.getElementById('noRes');
+
+        if(!id) return alert("Enter ID");
+
+        try {
+            const { data, error } = await _supabase.from('Booking').select('*').ilike('passenger_id', id);
+            if (error) throw error;
+
+            body.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    body.innerHTML += `<tr>
+                        <td>#${item.id_booking}</td>
+                        <td>Trip ${item.schedule_id}</td>
+                        <td><button class="btn-cancel" onclick="deleteRes(${item.id_booking})">Cancel</button></td>
+                    </tr>`;
+                });
+                table.style.display = 'table';
+                msg.style.display = 'none';
+            } else {
+                table.style.display = 'none';
+                msg.style.display = 'block';
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Connection Blocked: Please use Live Server!");
+        }
+    }
+
+    async function deleteRes(bid) {
+        if(confirm("Confirm cancellation?")) {
+            const { error } = await _supabase.from('Booking').delete().eq('id_booking', bid);
+            if(!error) { alert("Deleted!"); fetchData(); }
+        }
+    }
+</script>
+</body>
+</html>
