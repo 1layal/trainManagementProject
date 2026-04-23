@@ -154,7 +154,7 @@
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Get train ID from URL
+           
             const urlParams = new URLSearchParams(window.location.search);
             let trainId = urlParams.get('id');
 
@@ -163,7 +163,6 @@
             if (!trainId) {
                 document.getElementById('message').innerHTML = '<span class="error">No train ID provided in URL.</span>';
             } else {
-                // Convert to number
                 trainId = Number(trainId);
                 if (isNaN(trainId)) {
                     document.getElementById('message').innerHTML = '<span class="error">Invalid train ID (not a number).</span>';

@@ -163,7 +163,6 @@
     </div>
 
 <script>
-    // Supabase Config
     const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -180,7 +179,7 @@
             return;
         }
 
-        // تهيئة الواجهة للبحث
+       
         btn.disabled = true;
         btn.innerText = "Fetching Data...";
         table.style.display = "none";
@@ -188,10 +187,7 @@
         tbody.innerHTML = "";
 
         try {
-            /* المنطق الاحترافي:
-               نجلب الحجوزات من جدول Booking ونقوم بعمل Join تلقائي مع جدول schedules 
-               لجلب اسم المسار ووقت المغادرة في طلب واحد فقط.
-            */
+          
             const { data, error } = await _supabase
                 .from('Booking')
                 .select(`

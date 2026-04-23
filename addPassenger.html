@@ -134,7 +134,7 @@
         };
 
         try {
-            // إضافة البيانات لجدول passengers فقط
+           
             const { error } = await _supabase
                 .from('passengers')
                 .insert([passengerData]);

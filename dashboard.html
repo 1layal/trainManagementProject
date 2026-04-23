@@ -75,15 +75,15 @@
 border-radius:20px;"></span></h2>
  <div id="userInfo"></div>
  <div class="action-buttons">
-    <!-- Admin-only links -->
+    
     <a href="add_train.html" class="admin-only">Add Train</a>
     <a href="manage_trains.html" class="admin-only">Manage Trains</a>
     <a href="displayRevenues.html" class="admin-only">View Revenues</a>
     <a href="schedule.html" class="admin-only">Schedule Managemet</a>
     <a href="past_schedules.html" class="admin-only">Past Schedules </a>
     <a href="analytics.html" class="admin-only"> Popular Destinations </a>
-
-    <!-- Both roles -->
+    <a href="advanced_reports.html" class="admin-only"> Avdanced Reports </a>  
+     
     <a href="addPassenger.html">Add Passenger</a>
     <a href="searchPassenger.html">Manage Passenger</a>
     <a href="viewPassengerHistory.html">Passenger History</a>
@@ -92,7 +92,7 @@ border-radius:20px;"></span></h2>
     <a href="deleteReservation.html">Cancel Reservation</a>
     <a href="modify.html">Modify Bookings</a>
 
-    <!-- Backup button (admin-only) -->
+    
    
 
     <!-- Logout button -->
@@ -127,7 +127,7 @@ border-radius:20px;"></span></h2>
  </div>
 </div>
 <script>
- // ========== 1. Supabase Client (MUST be correct) ==========
+ 
              const SUPABASE_URL = 'https://llodsshgdscjtlwdajgs.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -141,7 +141,7 @@ const userRole = localStorage.getItem('userRole') || 'staff';
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         document.getElementById('generateReportBtn').addEventListener('click', generateReport);
     }
-    //download CSV file
+   
     async function exportAllData() {
     try {
         // Fetch all data from each table
@@ -176,8 +176,7 @@ const userRole = localStorage.getItem('userRole') || 'staff';
         alert('Export failed: ' + err.message);
     }
 }
-// ========== Attach event listener (only if admin) ==========
-// Assuming you already have a variable userRole from localStorage or session
+
 
 if (userRole === 'admin') {
     const backupBtn = document.getElementById('backupBtn');
@@ -185,7 +184,7 @@ if (userRole === 'admin') {
         backupBtn.addEventListener('click', exportAllData);
     }
 }
- // ========== 3. KPI Function (using your actual column names) ==========
+ //  KPI Function 
  async function loadKPIs() {
  try {
  // Count trains (table 'trains'? You said columns: ID, name, number, capacity)
@@ -207,9 +206,9 @@ if (userRole === 'admin') {
  .select('ticket_price');
  if (err4) throw new Error(`Revenue: ${err4.message}`);
  const totalRevenue = bookings?.reduce((sum, b) => sum + (b.ticket_price || 0), 0) || 0;
- // Occupancy rate (requires trains.capacity and maybe a way to count booked seats)
- // Since you have booking table with train_ID, we can count bookings per train
- // But easier: get total capacity from trains and total bookings (each booking = 1 seat)
+ // Occupancy rate
+
+ // get total capacity from trains and total bookings (each booking = 1 seat)
  const { data: trains, error: err5 } = await supabaseClient.from('trains').select('capacity');
  if (err5) throw new Error(`Occupancy: ${err5.message}`);
  const totalCapacity = trains?.reduce((sum, t) => sum + (t.capacity || 0), 0) || 0;
@@ -231,7 +230,7 @@ Occupancy</div></div>
  document.getElementById('kpiGrid').innerHTML = `<div class="error">Failed to load KPIs: ${err.message}</div>`;
  }
  }
- // ========== 4. Periodic Booking Reports ==========
+ // Periodic Booking Reports 
 async function generateReport() {
     const period = document.getElementById('reportPeriod').value;
     let startDate;
@@ -303,7 +302,7 @@ async function generateReport() {
 
     document.getElementById('reportResult').innerHTML = html;
 }
- // ========== 5. Logout ==========
+ //  Logout
  document.getElementById('logoutBtn').addEventListener('click', async () => {
  await supabaseClient.auth.signOut();
  window.location.href = 'login.html';

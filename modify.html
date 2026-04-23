@@ -96,7 +96,7 @@
 
     let oldBooking = null;
 
-    // جلب قائمة القطارات عند التحميل
+    
     async function loadTrains() {
         const { data } = await _supabase.from('trains').select('id, name');
         const select = document.getElementById('editTrain');
@@ -108,12 +108,12 @@
         });
     }
 
-    // البحث باستخدام الـ ID فقط
+    
     async function searchByPassport() {
         const p_id = document.getElementById('searchID').value.trim();
         if(!p_id) { alert("Please enter Passenger ID"); return; }
 
-        // البحث عن آخر حجز لهذا المعرف
+        
         const { data: bData, error } = await _supabase
             .from('Booking')
             .select('*')
@@ -146,14 +146,14 @@
         saveBtn.innerText = "Processing Update...";
 
         try {
-            // التحقق إذا تغير القطار لتعديل المقاعد المتاحة (available_seats)
+           
             if (oldTrainId && oldTrainId != newTrainId) {
                 
-                // 1. إعادة مقعد للقطار القديم
+               
                 const { data: oldT } = await _supabase.from('trains').select('available_seats').eq('id', oldTrainId).single();
                 await _supabase.from('trains').update({ available_seats: (oldT.available_seats || 0) + 1 }).eq('id', oldTrainId);
 
-                // 2. التحقق من القطار الجديد وخصم مقعد
+               
                 const { data: newT } = await _supabase.from('trains').select('available_seats').eq('id', newTrainId).single();
                 if (newT.available_seats <= 0) {
                     throw new Error("The new selected train is full!");
@@ -161,7 +161,7 @@
                 await _supabase.from('trains').update({ available_seats: newT.available_seats - 1 }).eq('id', newTrainId);
             }
 
-            // تحديث سجل الحجز
+           
             const { error: updateError } = await _supabase.from('Booking')
                 .update({ 
                     name: newName, 

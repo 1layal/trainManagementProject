@@ -135,7 +135,7 @@
             return;
         }
 
-        // After successful auth, fetch role from users table
+        //  fetch role from users table after authentication
         const { data: userData, error: roleError } = await supabaseClient
             .from('users')
             .select('role')
