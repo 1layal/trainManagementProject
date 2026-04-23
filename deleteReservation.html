@@ -48,16 +48,18 @@
         if(!id) return alert("Enter ID");
 
         try {
+            
             const { data, error } = await _supabase.from('Booking').select('*').ilike('passenger_id', id);
             if (error) throw error;
 
             body.innerHTML = '';
             if (data && data.length > 0) {
                 data.forEach(item => {
+                    
                     body.innerHTML += `<tr>
                         <td>#${item.id_booking}</td>
                         <td>Trip ${item.schedule_id}</td>
-                        <td><button class="btn-cancel" onclick="deleteRes(${item.id_booking})">Cancel</button></td>
+                        <td><button class="btn-cancel" onclick="deleteRes(${item.id_booking}, ${item.train_id})">Cancel</button></td>
                     </tr>`;
                 });
                 table.style.display = 'table';
@@ -68,14 +70,41 @@
             }
         } catch (e) {
             console.error(e);
-            alert("Connection Blocked: Please use Live Server!");
+            alert("Error loading data!");
         }
     }
 
-    async function deleteRes(bid) {
+    async function deleteRes(bid, tid) {
         if(confirm("Confirm cancellation?")) {
-            const { error } = await _supabase.from('Booking').delete().eq('id_booking', bid);
-            if(!error) { alert("Deleted!"); fetchData(); }
+            try {
+                
+                const { error: delError } = await _supabase.from('Booking').delete().eq('id_booking', bid);
+                if (delError) throw delError;
+
+               
+                const { data: trainData, error: trError } = await _supabase
+                    .from('trains')
+                    .select('available_seats')
+                    .eq('id', tid)
+                    .single();
+                
+                if (trError) throw trError;
+
+                
+                const { error: updError } = await _supabase
+                    .from('trains')
+                    .update({ available_seats: trainData.available_seats + 1 })
+                    .eq('id', tid);
+
+                if (updError) throw updError;
+
+                alert("Success: Booking cancelled and seat restored!");
+                fetchData();
+
+            } catch (e) {
+                console.error(e);
+                alert("Operation failed: " + e.message);
+            }
         }
     }
 </script>

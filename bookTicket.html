@@ -170,7 +170,7 @@
                 }]);
 
             if (bError) throw bError;
-
+           
             const { error: uError } = await _supabase
                 .from('trains')
                 .update({ available_seats: availableSeats - 1 })
