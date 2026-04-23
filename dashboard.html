@@ -132,7 +132,7 @@ border-radius:20px;"></span></h2>
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsb2Rzc2hnZHNjanRsd2RhamdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDc2MDksImV4cCI6MjA5MDc4MzYwOX0.Fytw-auxCmWABCEDCwPjuAGEoWvk88abfpXoOtnFcJs';
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const userRole = localStorage.getItem('userRole') || 'staff';
+    const userRole = localStorage.getItem('userRole') || 'staff';
     const userEmail = localStorage.getItem('userEmail') || 'unknown';
     document.getElementById('roleBadge').innerText = userRole.toUpperCase();
     document.getElementById('userInfo').innerHTML =` Logged in as: ${userEmail} (${userRole})`;
@@ -305,7 +305,7 @@ async function generateReport() {
  //  Logout
  document.getElementById('logoutBtn').addEventListener('click', async () => {
  await supabaseClient.auth.signOut();
- window.location.href = 'login.html';
+ window.location.href = 'index.html';
  });
  loadKPIs();
 </script>
