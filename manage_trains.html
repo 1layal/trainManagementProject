@@ -141,7 +141,7 @@
         // Check login
         (async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) window.location.href = 'login.html';
+            if (!session) window.location.href = 'index.html';
         })();
 
         async function loadTrains() {
@@ -182,7 +182,9 @@
         function editTrain(id) {
             window.location.href = `edit_train.html?id=${id}`;
         }
-
+document.getElementById('addTrainBtn').addEventListener('click', () => {
+    window.location.href = 'add_train.html';
+});
         loadTrains();
     </script>
 </body>
