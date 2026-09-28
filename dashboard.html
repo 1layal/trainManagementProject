@@ -161,7 +161,7 @@ border-radius:20px;"></span></h2>
 
         allCsv += '--- TRAINS ---\n' + arrayToCsv(trains) + '\n\n';
         allCsv += '--- PASSENGERS ---\n' + arrayToCsv(passengers) + '\n\n';
-        allCsv += '--- BOOKINGS ---\n' + arrayToCsv(bookings);
+        allCsv += '--- BOOKINGS ---\n' + arrayToCsv(Booking);
 
         // Download
         const blob = new Blob([allCsv], { type: 'text/csv' });
